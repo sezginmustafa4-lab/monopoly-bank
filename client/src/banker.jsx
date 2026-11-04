@@ -19,7 +19,7 @@ import {
   QrCode as QrIcon, Dices, Plus, Minus, RotateCcw, MoreVertical, Trash2, Copy, Check,
   Settings, UserPlus, Users, PlayCircle,
   Receipt, ArrowLeftRight, ArrowDownToLine, ArrowUpFromLine, Flag, Undo2,
-  Wallet, ListChecks, Rows2,
+  Wallet, ListChecks, Rows2, ExternalLink,
 } from 'lucide-react';
 import '../index.css';
 
@@ -324,9 +324,14 @@ function PlayerJoinCard({ player, lanUrl, onRemove }) {
         <div className="bg-white p-2 rounded-lg">
           <QrCode value={link} size={200} />
         </div>
-        <button className="btn btn-xs btn-ghost gap-1 mt-1" onClick={copy}>
-          {copied ? <><Check size={12} /> {t('common.copied')}</> : <><Copy size={12} /> {t('banker.copyLink')}</>}
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+          <button className="btn btn-xs btn-ghost gap-1" onClick={copy}>
+            {copied ? <><Check size={12} /> {t('common.copied')}</> : <><Copy size={12} /> {t('banker.copyLink')}</>}
+          </button>
+          <a className="btn btn-xs btn-primary gap-1" href={link} target="_blank" rel="noreferrer">
+            <ExternalLink size={12} /> Oyuncu ekranını aç
+          </a>
+        </div>
       </div>
     </div>
   );
