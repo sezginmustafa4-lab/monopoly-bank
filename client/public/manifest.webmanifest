@@ -1,0 +1,19 @@
+{
+  "name": "Monopoly Bank",
+  "short_name": "Monopoly Bank",
+  "description": "Monopoly oyununda dijital banka",
+  "start_url": "/banker",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/monopoly-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
