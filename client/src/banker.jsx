@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import toast, { Toaster } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +19,7 @@ import {
   QrCode as QrIcon, Dices, Plus, Minus, RotateCcw, MoreVertical, Trash2, Copy, Check,
   Settings, UserPlus, Users, PlayCircle,
   Receipt, ArrowLeftRight, ArrowDownToLine, ArrowUpFromLine, Flag, Undo2,
-  Wallet, ListChecks, Rows2,
+  Wallet, ListChecks, Rows2, ExternalLink,
 } from 'lucide-react';
 import '../index.css';
 
@@ -36,6 +36,8 @@ function App() {
   const { socket, state, connected, diceRoll } = useSocket({ role: 'banker' });
   const [lanUrl, setLanUrl] = useState(location.origin);
   const [activeRoll, setActiveRoll] = useState(null);
+  const backupChecked = useRef(false);
+  const restoreInProgress = useRef(false);
 
   useEffect(() => {
     fetch('/api/server-info')
@@ -45,6 +47,41 @@ function App() {
   }, []);
 
   useEffect(() => { if (diceRoll) setActiveRoll(diceRoll); }, [diceRoll]);
+  useEffect(() => {
+    if (!state || backupChecked.current) return;
+    backupChecked.current = true;
+    const backupKey = 'monopoly-bank-auto-backup-v1';
+    let backup = null;
+    try {
+      const raw = localStorage.getItem(backupKey);
+      if (raw) backup = JSON.parse(raw);
+    } catch {
+      toast.error('Tablet yedeği okunamadı.');
+    }
+    const serverIsEmpty = state.players.length === 0 && state.transactions.length === 0;
+    const backupHasGame = backup?.version === 1 &&
+      Array.isArray(backup.players) && backup.players.length > 0;
+    if (serverIsEmpty && backupHasGame) {
+      restoreInProgress.current = true;
+      if (window.confirm('Sunucuda kayıtlı oyun bulunamadı. Bu tabletteki son yedek geri yüklensin mi?')) {
+        emit(socket, 'restore-state', backup)
+          .then(() => toast.success('Oyun tablet yedeğinden geri yüklendi.'))
+          .catch(() => { restoreInProgress.current = false; toast.error('Yedek geri yüklenemedi.'); });
+      }
+      return;
+    }
+    try { localStorage.setItem(backupKey, JSON.stringify(state)); }
+    catch { toast.error('Otomatik yedek kaydedilemedi. Tablet tarayıcı alanını kontrol edin.'); }
+  }, [state, socket]);
+
+  useEffect(() => {
+    if (!state || !backupChecked.current) return;
+    if (restoreInProgress.current && state.players.length === 0 && state.transactions.length === 0) return;
+    restoreInProgress.current = false;
+    try { localStorage.setItem('monopoly-bank-auto-backup-v1', JSON.stringify(state)); }
+    catch { toast.error('Otomatik yedek kaydedilemedi. Tablet tarayıcı alanını kontrol edin.'); }
+  }, [state]);
+
 
   if (!state) {
     return (
@@ -324,9 +361,14 @@ function PlayerJoinCard({ player, lanUrl, onRemove }) {
         <div className="bg-white p-2 rounded-lg">
           <QrCode value={link} size={200} />
         </div>
-        <button className="btn btn-xs btn-ghost gap-1 mt-1" onClick={copy}>
-          {copied ? <><Check size={12} /> {t('common.copied')}</> : <><Copy size={12} /> {t('banker.copyLink')}</>}
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+          <button className="btn btn-xs btn-ghost gap-1" onClick={copy}>
+            {copied ? <><Check size={12} /> {t('common.copied')}</> : <><Copy size={12} /> {t('banker.copyLink')}</>}
+          </button>
+          <a className="btn btn-xs btn-primary gap-1" href={link} target="_blank" rel="noreferrer">
+            <ExternalLink size={12} /> Oyuncu ekranını aç
+          </a>
+        </div>
       </div>
     </div>
   );

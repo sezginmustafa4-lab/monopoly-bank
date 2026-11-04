@@ -13,3 +13,17 @@ test('a host name that could be rebound to this machine is not trusted', () => {
     assert.equal(isTrustedHost(host), false, String(host));
   }
 });
+
+
+test('configured public hostnames are trusted without allowing arbitrary domains', () => {
+  const previous = process.env.MONOPOLY_ALLOWED_HOSTS;
+  process.env.MONOPOLY_ALLOWED_HOSTS = 'game.example.com, play.example.com';
+  try {
+    assert.equal(isTrustedHost('game.example.com'), true);
+    assert.equal(isTrustedHost('play.example.com:443'), true);
+    assert.equal(isTrustedHost('evil.example.com'), false);
+  } finally {
+    if (previous === undefined) delete process.env.MONOPOLY_ALLOWED_HOSTS;
+    else process.env.MONOPOLY_ALLOWED_HOSTS = previous;
+  }
+});

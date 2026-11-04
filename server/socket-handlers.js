@@ -78,6 +78,7 @@ export function attachSockets(io) {
     socket.on('banker-adjust', wrap(requireBanker(state.bankerAdjust)));
     socket.on('undo', wrap(requireBanker(state.undo)));
     socket.on('reset', wrap(requireBanker(state.reset)));
+    socket.on('restore-state', wrap(requireBanker(state.restore)));
 
     socket.on('disconnect', () => {
       if (!playerId) return;

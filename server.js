@@ -69,7 +69,13 @@ export async function startServer({
   const lanUrl = `http://${lanIp}:${actualPort}`;
 
   await state.init();
-  app.get('/api/server-info', (_req, res) => res.json({ lanUrl }));
+  app.get('/api/server-info', (req, res) => {
+    // Bulut ortamında QR kodları sunucunun özel LAN IP'sini değil, kullanıcının
+    // tarayıcıdan eriştiği gerçek HTTPS adresini kullanmalı.
+    const forwardedProto = req.headers['x-forwarded-proto'];
+    const protocol = (typeof forwardedProto === 'string' ? forwardedProto.split(',')[0] : req.protocol).trim();
+    res.json({ lanUrl: `${protocol}://${req.get('host')}` });
+  });
   mountRoutes(app);
   attachSockets(io);
 
@@ -93,5 +99,9 @@ export async function startServer({
 const isMain = import.meta.url === `file://${process.argv[1]}`;
 if (isMain) {
   const port = process.env.PORT ? Number(process.env.PORT) : 3000;
-  await startServer({ port, printQr: true });
+  await startServer({
+    port,
+    printQr: true,
+    dataFile: process.env.MONOPOLY_DATA_FILE,
+  });
 }

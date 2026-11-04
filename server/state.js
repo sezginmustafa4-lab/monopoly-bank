@@ -32,6 +32,30 @@ export async function reset() {
   await commit(logic.createInitialState());
 }
 
+export async function restore(snapshot) {
+  if (!snapshot || snapshot.version !== 1 ||
+      !['setup', 'active'].includes(snapshot.status) ||
+      !snapshot.config || !Array.isArray(snapshot.players) ||
+      !Array.isArray(snapshot.transactions) || !Array.isArray(snapshot.diceRolls) ||
+      snapshot.players.length > 12 || snapshot.transactions.length > 10000 ||
+      snapshot.diceRolls.length > 50) throw new Error('errors.invalidBackup');
+
+  const players = snapshot.players.map((p) => {
+    if (!p || typeof p.id !== 'string' || typeof p.name !== 'string' ||
+        typeof p.token !== 'string' || !Number.isSafeInteger(p.balance) ||
+        typeof p.color !== 'string') throw new Error('errors.invalidBackup');
+    return { ...p, online: false };
+  });
+  const restored = {
+    ...snapshot,
+    config: { ...logic.createInitialState().config, ...logic.sanitizeConfig(snapshot.config) },
+    players,
+    transactions: snapshot.transactions,
+    diceRolls: snapshot.diceRolls,
+  };
+  await commit(restored);
+}
+
 export async function addPlayer(payload) {
   await commit(logic.addPlayer(state, payload));
 }
