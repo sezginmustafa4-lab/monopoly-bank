@@ -75,6 +75,8 @@ function App() {
 
   useEffect(() => {
     if (!state || !backupChecked.current) return;
+    if (restoreInProgress.current && state.players.length === 0 && state.transactions.length === 0) return;
+    restoreInProgress.current = false;
     try { localStorage.setItem('monopoly-bank-auto-backup-v1', JSON.stringify(state)); }
     catch { toast.error('Otomatik yedek kaydedilemedi. Tablet tarayıcı alanını kontrol edin.'); }
   }, [state]);
