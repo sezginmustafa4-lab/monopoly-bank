@@ -35,7 +35,9 @@ function App() {
   useTheme();
   const { socket, state, connected, diceRoll } = useSocket({ role: 'banker' });
   const [lanUrl, setLanUrl] = useState(location.origin);
-  const [activeRoll, setActiveRoll] = useState(null);\n  const backupChecked = useRef(false);\n  const restoreInProgress = useRef(false);
+  const [activeRoll, setActiveRoll] = useState(null);
+  const backupChecked = useRef(false);
+  const restoreInProgress = useRef(false);
 
   useEffect(() => {
     fetch('/api/server-info')
