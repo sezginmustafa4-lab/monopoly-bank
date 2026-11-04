@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import toast, { Toaster } from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
@@ -35,7 +35,7 @@ function App() {
   useTheme();
   const { socket, state, connected, diceRoll } = useSocket({ role: 'banker' });
   const [lanUrl, setLanUrl] = useState(location.origin);
-  const [activeRoll, setActiveRoll] = useState(null);
+  const [activeRoll, setActiveRoll] = useState(null);\n  const backupChecked = useRef(false);
 
   useEffect(() => {
     fetch('/api/server-info')
@@ -45,6 +45,37 @@ function App() {
   }, []);
 
   useEffect(() => { if (diceRoll) setActiveRoll(diceRoll); }, [diceRoll]);
+  useEffect(() => {
+    if (!state || backupChecked.current) return;
+    backupChecked.current = true;
+    const backupKey = 'monopoly-bank-auto-backup-v1';
+    let backup = null;
+    try {
+      const raw = localStorage.getItem(backupKey);
+      if (raw) backup = JSON.parse(raw);
+    } catch {
+      toast.error('Tablet yedeği okunamadı.');
+    }
+    const serverIsEmpty = state.players.length === 0 && state.transactions.length === 0;
+    const backupHasGame = backup?.version === 1 &&
+      Array.isArray(backup.players) && backup.players.length > 0;
+    if (serverIsEmpty && backupHasGame &&
+        window.confirm('Sunucuda kayıtlı oyun bulunamadı. Bu tabletteki son yedek geri yüklensin mi?')) {
+      emit(socket, 'restore-state', backup)
+        .then(() => toast.success('Oyun tablet yedeğinden geri yüklendi.'))
+        .catch(() => toast.error('Yedek geri yüklenemedi.'));
+      return;
+    }
+    try { localStorage.setItem(backupKey, JSON.stringify(state)); }
+    catch { toast.error('Otomatik yedek kaydedilemedi. Tablet tarayıcı alanını kontrol edin.'); }
+  }, [state, socket]);
+
+  useEffect(() => {
+    if (!state || !backupChecked.current) return;
+    try { localStorage.setItem('monopoly-bank-auto-backup-v1', JSON.stringify(state)); }
+    catch { toast.error('Otomatik yedek kaydedilemedi. Tablet tarayıcı alanını kontrol edin.'); }
+  }, [state]);
+
 
   if (!state) {
     return (
