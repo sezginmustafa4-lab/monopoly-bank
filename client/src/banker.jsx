@@ -63,6 +63,7 @@ function App() {
       Array.isArray(backup.players) && backup.players.length > 0;
     if (serverIsEmpty && backupHasGame &&
         window.confirm('Sunucuda kayıtlı oyun bulunamadı. Bu tabletteki son yedek geri yüklensin mi?')) {
+      restoreInProgress.current = true;
       emit(socket, 'restore-state', backup)
         .then(() => toast.success('Oyun tablet yedeğinden geri yüklendi.'))
         .catch(() => { restoreInProgress.current = false; toast.error('Yedek geri yüklenemedi.'); });
